@@ -80,5 +80,6 @@ iAV1wKXhjxnPhg
 > 題目說明：題目給了一個會等6秒的執行檔，沒有input
 
 因為題目說明是 Stop wait a minute，可是程式只停6秒，一開始想說是不是用gdb把時間改成1分鐘就會發生神奇的事，結果沒有。
+
 用ghidra reverse出來後，發現有個編譯進去可是沒有跑過的函式，我就在main 的 ret 之前，手動jump到那個函式的位置，就印出flag了。
 雖然整題還是意義不明...
