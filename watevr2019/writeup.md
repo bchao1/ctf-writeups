@@ -25,6 +25,11 @@ iAV1wKXhjxnPhg
 |Polly|misc|no|
 
 ## Writeup
+### Web - Cookie Store
+> 題目說明：網頁會顯示你現在有 500 元，買到 1000 元的 cookie 就可以拿到 flag。
+
+把cookie裡的值base64decode之後，會拿到一個json，裡面包含自己錢的資訊，直接改再base64回去，就可以買到flag了
+
 ### Web - Pickle Store
 > 題目說明：網頁會顯示你現在有 500 元，買到 1000 元的 pickle 就可以拿到 flag。
    
