@@ -126,3 +126,31 @@ RMIInterface stub = (RMIInterface) registry.lookup("Hello");
 String response = stub.getSecret();
 ```
 就可以拿到 flag。
+
+## [crypto] RSACTR
+這題是結合 RSA 和 block cipher counter mode 的加密，總共只能有三個 query。一開始有幾種想法：
+### 想法一
+傳 0 可以解出 nonce。傳一個 query 得到 flag 加密的結果，把結果 e 次方（三次方）以後可以列出一個 flag 的三次式 mod(n)。
+   
+下面都假設在解 flag 的第一個
+block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 block** 是 F<sub>1</sub>。然後包含 nonce 的 counter 值是 C（這是可控的）。
+- 我們拿到的密文是 (F<sub>1</sub> + C<sup>d</sup>) mod(n) = M<sub>1</sub>（往後省略 mod(n))。
+-  三次方以後得到 (F<sub>1</sub> + C<sup>d</sup>)<sup>3</sup>
+- 展開得 F<sub>1</sub><sup>3</sup> + F<sub>1</sub><sup>2</sup>C<sup>d</sup> +F<sub>1</sub>C<sup>2d</sup> + C<sup>3d</sup>
+- 注意 C<sup>3d</sup>modn = C （由RSA定義）以及 C<sup>d</sup> = （M<sub>1</sub> - F<sub>1</sub>）modn。
+- 化簡得 F<sub>1</sub><sup>3</sup> + F<sub>1</sub>C<sup>d</sup>(F<sub>1</sub>+C<sup>d</sup>) + C = F<sub>1</sub><sup>3</sup> + F<sub>1</sub>M<sub>1</sub>(M<sub>1</sub> - F<sub>1</sub>) + C = M<sub>1</sub><sup>3</sup>
+
+由於 M<sub>1</sub>, C 都是已知，現在就是要解一個模n下的三次式。
+## 想法二
+> 稍微修改一下想法一
+
+想法一只用到了兩次的 query，但題目給了三次，其實可以多用一次。所以最後一次 query 就再送一次 flag query，這時的 counter 變成上一個 query 的 counter + 6060 = C'。假設這次第一個 block 的密文是M<sub>2</sub>。
+   
+利用想法一的結果，可以列出
+- F<sub>1</sub><sup>3</sup> + F<sub>1</sub>M<sub>1</sub>(M<sub>1</sub> - F<sub>1</sub>) + C
+- F<sub>1</sub><sup>3</sup> + F<sub>1</sub>M<sub>2</sub>(M<sub>2</sub> - F<sub>1</sub>) + C'
+- 相減得到 F<sub>1</sub>(M<sub>2</sub><sup>2</sup>-M<sub>1</sub><sup>2</sup>)+F<sub>1</sub><sup>2</sup>(M<sub>1</sub>-M<sub>2</sub>) + 6060 = M<sub>2</sub><sup>3</sup>-M<sub>1</sub><sup>3</sup>
+
+這邊變成要解一個模n下的二次式。
+   
+因為要在模n下解，我就假設每個多項式除以n的商然後用sagemath去解爆搜，但都沒有做出合理的結果。
