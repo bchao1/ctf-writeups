@@ -157,27 +157,24 @@ block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 
 
 ## [web] King of PHP
 
-一開始看到原始碼大概知道
-用 c 來寫入檔案
-傳array 可以 bypass strlen
-用 f 來讀檔
-可以任意讀檔 但flag不在根目錄下的/flag
-覺得flag應該是執行擋
-所以應該是要rce
-之後有查到 file_get_contents + phar 可以 rce
-但是需要`__destruct` 或 `__wakeup` 等magic method 才能製造POP
+一開始看到原始碼大概知道可以用`c`來寫入檔案，並且可以透過傳`array`bypass strlen的檢查。用`f`可以任意讀檔，但flag不在根目錄下的/flag，因此覺得flag應該是執行擋，所以應該是要rce。
+
+之後有查到 file_get_contents + phar 可以 rce，但是需要`__destruct` 或 `__wakeup` 等magic method 才能製造POP
+
+
 https://blog.zsxsoft.com/post/38
 https://ithelp.ithome.com.tw/articles/10204416
 ```php
 strtolower($filename[0]) == "p" ? die("Bad 🍊!") : die(htmlspecialchars(file_get_contents($filename))); 
 ```
-會檢查第一個字是不是p
-所以php:// phar://感覺不能直接用
-可以用`compress.bzip2://`來bypass
-後來又找到他的php info
-用這個
+會檢查第一個字是不是p，所以`php://` `phar://`不能直接用，要用`compress.bzip2://`來bypass。
+
+後來又找到他的php_info，用下面的工具
+
 https://github.com/GoSecure/php7-opcache-override
+
 算出他的system_id
+
 ```
 PHP version : 7.4.3-dev
 Zend Extension ID : API320190902,NTS
@@ -186,18 +183,19 @@ Assuming x86_64 architecture
 ------------
 System ID : 418f4c6e5989490277b52c8b4023b08e
 ```
-看到
+
+
+後來看到
+
 https://eductf.zoolab.org:28443/?f=/usr/local/etc/php/conf.d/php-king.ini
-裡面會用preload.php 去 preload opcache
-可是php.ini裡面
-opcache.file_cache 又是空白的
-直接去訪問php opcache的預設路徑也真的找不到東西
+
+裡面會用preload.php 去 preload opcache，可是php.ini裡面`opcache.file_cache`又是空白的，直接去訪問php opcache的預設路徑也真的找不到東西。
+
 https://eductf.zoolab.org:28443/?f=tmp/opcache/418f4c6e5989490277b52c8b4023b08e/var/www/index.php.bin
-原本想要利用`preload.php`裡的__detruct去串POP
-因為裡面有
+
+原本想要利用`preload.php`裡的__detruct去串POP，因為裡面有
+
 ```php 
 exec('rm' .$this->path)
 ```
-只要能控path就能rce了
-可是$path是private variable 沒辦法透過繼承去更動他
-最後就卡在這裡....
+只要能控path就能rce了，可是$path是private variable 沒辦法透過繼承去更動他，最後就卡在這裡....
