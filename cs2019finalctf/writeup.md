@@ -45,3 +45,28 @@ bin_sh libc address
 system libc address
 ```
 執行完就成功拿 shell。
+
+## [web] babyRMI
+從原始碼看起來 remote 端會有一個 registry，裡面會放一些 RMIInterface 的物件。每個物件有一些函式可以呼叫。執行 compile.sh 就可以執行 runClient.sh，就是去執行 Client.java 的內容。
+   
+我們發現 Client.java 是呼叫 sayHello()，接下來就嘗試呼叫 getSecret()，他說
+```
+response: Hint: FLAG is not in this object! Try to find another object :)
+```
+所以很明顯就是要找其他的 RMIInterface。這邊就將 registry 裡的東西列出來：
+```java
+String[] boundNames = registry.list();
+for (String name : boundNames) {
+    System.out.println(name);
+}
+```
+```
+FLAG
+Hello
+```
+然後修改一下 Client.java
+```java
+RMIInterface stub = (RMIInterface) registry.lookup("Hello");
+String response = stub.getSecret();
+```
+就可以拿到 flag。
