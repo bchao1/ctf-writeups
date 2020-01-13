@@ -51,7 +51,9 @@ iAV1wKXhjxnPhg
 
 去看了網站的原始碼發現裡面有個很像 jsfuck 的東西。
 ### Forensics - Evil Cuteness
+> 題目說明：給了一個貓咪圖。
 
+上課沒有提到這種跟影像有關的 forensics 題目。
 ### Forensics - Blurry Image
 > 題目說明：給了一個很模糊的影像，還有一個原圖的 patch。
 
