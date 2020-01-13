@@ -18,6 +18,62 @@
 ## 解題流程
 ### [Reverse] PokemonGo
 
+這題只拿到一個程式執行的 trace log，分析一下以後發現是 golang 的（知道這個其實沒用）。整個 trace 很長，但其實有很多是 library function 或各種 system function 不重要，把這些東西忽略以後，先去搜索整個 trace 裡面 `Pokemon` 一開始出現在：
+```
+Entering main.main at /home/terrynini38514/Desktop/PokemonV2.go:38:6.
+.0:
+	 t0 = new string (input)
+```
+看起來 t0 是一個輸入。接著進入 golang 的
+ scanf 函式（不重要），然後回到 `Pokemon`：
+ ```
+ Leaving fmt.Scanf, resuming main.main at /home/terrynini38514/Desktop/PokemonV2.go:40:14.
+	 t6 = *t0
+	 t7 = PikaCheck(t6)
+Entering main.PikaCheck at /home/terrynini38514/Desktop/PokemonV2.go:6:6.
+```
+這邊很就很明顯了，PikaCheck 應該是去檢查我們的輸入是否符合條件（也就是 flag）。PikaCheck 一開始初始化一個陣列：
+```
+.0:
+	 t0 = local [20]int (a)
+	 jump 3
+```
+接著就是迴圈判斷（for loop)：
+```
+.3:
+	 t92 = phi [0: 0:int, 1: t10] #i
+	 t93 = len(input)
+	 t94 = t92 < t93
+	 if t94 goto 1 else 2
+```
+迴圈本體是：
+```
+.1:
+	 t1 = &t0[t92]
+	 t2 = input[t92]
+	 t3 = convert int <- uint8 (t2)
+	 t4 = t92 + 1:int
+	 t5 = len(input)
+	 t6 = t4 % t5
+	 t7 = input[t6]
+	 t8 = convert int <- uint8 (t7)
+	 t9 = t3 + t8
+	 *t1 = t9
+	 t10 = t92 + 1:int
+	 jump 3
+```
+這邊很明顯是把輸入的第 i 和 第 i+1 個字元加起來存入 t0[i]。
+   
+這個迴圈執行完以後，就會進入下一步的檢查（下面是一組，總共有 20 組）：
+```
+t11 = &t0[0:int]
+t12 = *t11
+t13 = t12 - 185:int
+t14 = 0:int + t13
+...
+```
+這邊就是檢查 t0 裡面的每一個值。
+
 ### [pwn] Impossible
 這題基本上是要 bypass 長度的限制。注意到當長度輸入是負的，程式是用 `len = abs(len)` 的方式來修正。這邊很自然會想到利用 int 的邊界條件。
    
