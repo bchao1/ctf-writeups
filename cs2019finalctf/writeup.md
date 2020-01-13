@@ -141,7 +141,7 @@ block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 
 - 化簡得 F<sub>1</sub><sup>3</sup> + F<sub>1</sub>C<sup>d</sup>(F<sub>1</sub>+C<sup>d</sup>) + C = F<sub>1</sub><sup>3</sup> + F<sub>1</sub>M<sub>1</sub>(M<sub>1</sub> - F<sub>1</sub>) + C = M<sub>1</sub><sup>3</sup>
 
 由於 M<sub>1</sub>, C 都是已知，現在就是要解一個模n下的三次式。
-## 想法二
+### 想法二
 > 稍微修改一下想法一
 
 想法一只用到了兩次的 query，但題目給了三次，其實可以多用一次。所以最後一次 query 就再送一次 flag query，這時的 counter 變成上一個 query 的 counter + 6060 = C'。假設這次第一個 block 的密文是M<sub>2</sub>。
@@ -154,3 +154,50 @@ block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 
 這邊變成要解一個模n下的二次式。
    
 因為要在模n下解，我就假設每個多項式除以n的商然後用sagemath去解爆搜，但都沒有做出合理的結果。
+
+##[web] King of PHP
+
+一開始看到原始碼大概知道
+用 c 來寫入檔案
+傳array 可以 bypass strlen
+用 f 來讀檔
+可以任意讀檔 但flag不在根目錄下的/flag
+覺得flag應該是執行擋
+所以應該是要rce
+之後有查到 file_get_contents + phar 可以 rce
+但是需要`__destruct` 或 `__wakeup` 等magic method 才能製造POP
+https://blog.zsxsoft.com/post/38
+https://ithelp.ithome.com.tw/articles/10204416
+```php
+strtolower($filename[0]) == "p" ? die("Bad 🍊!") : die(htmlspecialchars(file_get_contents($filename))); 
+```
+會檢查第一個字是不是p
+所以php:// phar://感覺不能直接用
+可以用`compress.bzip2://`來bypass
+後來又找到他的php info
+用這個
+https://github.com/GoSecure/php7-opcache-override
+算出他的system_id
+```
+PHP version : 7.4.3-dev
+Zend Extension ID : API320190902,NTS
+Zend Bin ID : BIN_48888
+Assuming x86_64 architecture
+------------
+System ID : 418f4c6e5989490277b52c8b4023b08e
+```
+看到
+https://eductf.zoolab.org:28443/?f=/usr/local/etc/php/conf.d/php-king.ini
+裡面會用preload.php 去 preload opcache
+可是php.ini裡面
+opcache.file_cache 又是空白的
+直接去訪問php opcache的預設路徑也真的找不到東西
+https://eductf.zoolab.org:28443/?f=tmp/opcache/418f4c6e5989490277b52c8b4023b08e/var/www/index.php.bin
+原本想要利用`preload.php`裡的__detruct去串POP
+因為裡面有
+```php 
+exec('rm' .$this->path)
+```
+只要能控path就能rce了
+可是$path是private variable 沒辦法透過繼承去更動他
+最後就卡在這裡....
