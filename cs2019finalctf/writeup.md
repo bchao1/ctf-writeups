@@ -155,7 +155,7 @@ block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 
    
 因為要在模n下解，我就假設每個多項式除以n的商然後用sagemath去解爆搜，但都沒有做出合理的結果。
 
-##[web] King of PHP
+## [web] King of PHP
 
 一開始看到原始碼大概知道
 用 c 來寫入檔案
