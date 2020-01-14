@@ -1,10 +1,11 @@
 # Computer Security 2019 Final CTF 
 ## 隊名與組員
 > NTUQQ
-- 電機三趙崇皓
-- 電機三李子筠
-- 電機三陳昱行
-- 資工三李豈翔
+- 電機三趙崇皓 Mckinsey666
+- 電機三李子筠 null
+- 電機三陳昱行 jchen8tw
+- 資工三李豈翔 katoreA
+
 ## 解題統計
 |Category|Solves|
 |---|---|
@@ -14,9 +15,12 @@
 |crypto|0|
 |misc|2|
 |Total|7|
+## 分工
+每一題都有列出負責人（主要討論的隊員）。大概的分工是：Mckinsey666, null 各主題都有幫忙看，katoreA 是 reverse, crypto 和 misc，jchen8tw 是 web 和 misc。
 
 ## 解題流程
 ### [Reverse] PokemonGo
+> 負責人：null, Mckinsey666
 
 這題只拿到一個程式執行的 trace log，分析一下以後發現是 golang 的（知道這個其實沒用）。整個 trace 很長，但其實有很多是 library function 或各種 system function 不重要，把這些東西忽略以後，先去搜索整個 trace 裡面 `Pokemon` 一開始出現在：
 ```
@@ -75,6 +79,8 @@ t14 = 0:int + t13
 這邊就是檢查 t0 裡面的每一個值。
 
 ### [pwn] Impossible
+> 負責人：Mckinsey666
+
 這題基本上是要 bypass 長度的限制。注意到當長度輸入是負的，程式是用 `len = abs(len)` 的方式來修正。這邊很自然會想到利用 int 的邊界條件。
    
 ```c
@@ -103,6 +109,8 @@ system libc address
 執行完就成功拿 shell。
 
 ## [web] babyRMI
+> 負責人：Mckinsey666
+
 從原始碼看起來 remote 端會有一個 registry，裡面會放一些 RMIInterface 的物件。每個物件有一些函式可以呼叫。執行 compile.sh 就可以執行 runClient.sh，就是去執行 Client.java 的內容。
    
 我們發現 Client.java 是呼叫 sayHello()，接下來就嘗試呼叫 getSecret()，他說
@@ -127,7 +135,9 @@ String response = stub.getSecret();
 ```
 就可以拿到 flag。
 
-## [crypto] RSACTR
+## [crypto] RSACTR (Unsolved)
+> 負責人：katoreA, null, Mckinsey666
+
 這題是結合 RSA 和 block cipher counter mode 的加密，總共只能有三個 query。一開始有幾種想法：
 ### 想法一
 傳 0 可以解出 nonce。傳一個 query 得到 flag 加密的結果，把結果 e 次方（三次方）以後可以列出一個 flag 的三次式 mod(n)。
@@ -155,7 +165,8 @@ block（同樣方法可以解另外兩個 block）。假設 flag 的**第一個 
    
 因為要在模n下解，我就假設每個多項式除以n的商然後用sagemath去解爆搜，但都沒有做出合理的結果。
 
-## [web] King of PHP
+## [web] King of PHP (Unsolved)
+> 負責人：jchen8tw, Mckinsey666
 
 一開始看到原始碼大概知道可以用`c`來寫入檔案，並且可以透過傳`array`bypass strlen的檢查。用`f`可以任意讀檔，但flag不在根目錄下的/flag，因此覺得flag應該是執行擋，所以應該是要rce。
 
@@ -201,6 +212,8 @@ exec('rm' .$this->path)
 只要能控path就能rce了，可是$path是private variable 沒辦法透過繼承去更動他，最後就卡在這裡....
 
 ## [misc] Ponzi Scheme
+> 負責人：katoreA
+
 進去之後要解 PoW，解了之後進入起始金額 1000 的賭博網站，要把錢賭到 10000。
 每次只能把錢 all in 進獎金池裡，在一定時間後會得到某個倍數的獎金量。
 如果拿獎金時池裡沒有足夠的錢，就會破產。
@@ -212,6 +225,7 @@ exec('rm' .$this->path)
 
 
 ## [reverse] H0W
+> 負責人：null, katoreA
 
 題目主要是給一個 pyc，以及一個 terrynini.so。
 
@@ -250,6 +264,7 @@ H0W.py 會引用一個 binary 檔，然後使用時間亂數，對原檔案裡�
 - 得到一張 .png，打開 .png 得到 FLAG。
 
 ## [reverse] YugiMoto
+> 負責人：null, katoreA
 
 用 file 去看 `main.gb`，發現是 Game Boy ROM image。
 
@@ -321,6 +336,7 @@ ret
 ![yeah](static/yeah.png)
 
 ## [reverse] VwVwVw (Unsolved)
+> 負責人：null
 
 一開始會拿到一個 binary，執行之後會看到他的使用方式是 `./verify flag`，把 flag 放在第一個參數。
 
@@ -363,6 +379,7 @@ print("You got it FLAG{%s}\n", s);
 不過因為我不太熟 avx，所以中間 vector instruction 看很久，在比賽結束之前來不及看完。
 
 ### [web] how2meow (Unsolved)
+> 負責人：null, jchen8tw
 
 這題大致上看起來跟 how2xss 有點像，都是要想辦法用 xss 拿到 cookie，再傳網址過去。
 
@@ -375,3 +392,18 @@ print("You got it FLAG{%s}\n", s);
 同樣的，用 img 和 svg 也會發生一樣的問題。
 
 接著因為沒有方向就沒有繼續下去。
+
+## [web] echo (Unsolved)
+> 負責人：Mckinsey666, jchen8tw
+
+進入頁面可以看到一個輸入的地方，當按下 echo 以後網頁就會顯示我們輸入的東西。
+   
+去查看網頁原始碼可以發現註解掉了 echo.zip，直接去訪問 echo.zip 可以拿到原始碼。我們發現網頁是使用 ejs 這個 web template 語法：
+```
+<%=text %>
+```
+把輸入的參數 text 取代到這個 ejs tag 裡面。因為跟 template injection 不是很熟，所以就去查了一下 ejs 有沒有相關的 template injection，但都查不太到，只有查到一個跟 Lodash 有關的 prototype pollution 的洞，但這題也沒有用到 Lodash。
+   
+因為不知道怎麼辦只好去 trace ejs 的原始碼，知道他會呼叫一個 render() 函式把模板和參數傳入，再深入往源追溯發現實際執行的函式是 exports.compile -> Template().compile。
+   
+Template 這個物件會去 parse template file，並且把輸入參數當成 data render 出來。我雖然只有 trace 到這邊，不過猜測應該是 parse 的地方有一些漏洞。
