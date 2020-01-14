@@ -212,7 +212,33 @@ exec('rm' .$this->path)
 
 
 ## [reverse] H0W
-reverse 的工作不是我做的，我也不知道要怎麼寫 :)。
+
+題目主要是給一個 pyc，以及一個 terrynini.so。
+
+把 pyc decompile 之後可以看到主要是讀進來一個檔案，然後用 terrynini 裡面的一堆 function 來處理資料。
+
+terrynini 是用 C 寫得 python extension，在 PyInit_terrynini 裡面可以看到使用到了 `PyModule_Create2`，而 `PyModule_Def` 在 0x2020a0。
+
+接下來就直接打開 gdb attach python process，看 terrynini.so + 0x2020a0 的內容，可以找到他的 m_methods，在裡面可以找到 nini1 ~ nini6 的 address。
+
+有了 address 之後就可以知道原本在 terrynini.so 裡面的 offset，也可以設 breakpoint 去 debug。
+
+最後解出來的每個 function 如下：
+
+- nini1：把 `time(0)` 存在 GitHub
+
+- nini2：把 GitHub 的值用 gmtime 和 sprintf 輸出成字串，格式是 年月星期時分秒
+
+- nini3：把 `fopen("output.txt", "w")` 得到的 pointer 存在 JetBrains
+
+- nini4：把 GitHub 當成 seed，`srand(GitHub)`
+
+- nini5：傳入一個數字，用 `rand()` 的值來選 otakunokokyu 中的 function 來處理（分別有 ichi, ni, san, yonnokata 四個 function）
+
+- nini6：把傳入的東西寫到 JetBrains 所指的檔案裡面，每次寫四個 byte
+
+而 ichinokata 是在 xor 0xfaceb00c，ninokata 是加上 0x12384，sannokata則是偶數 bit 向右轉 4個 bit，奇數 bit 向左轉 2 個 bit。yonnokata 則是 `x => sannokata(ninokata(ichinokata(x)))`
+
 H0W.py 會引用一個 binary 檔，然後使用時間亂數，對原檔案裡的內容每四個bytes隨機施展某個型。
 有四種型，每一種都是一個可反的，4bytes->4bytes 的函數，一開始給了一個預設的很長的 output。
 並且隨機用的時間被記在檔案的最後面。
@@ -222,3 +248,130 @@ H0W.py 會引用一個 binary 檔，然後使用時間亂數，對原檔案裡�
 - 用 nini5(0) 去觀察每一個 block 會使用哪一種型。
 - 寫出「反型」，對 output 的東西做一次。
 - 得到一張 .png，打開 .png 得到 FLAG。
+
+## [reverse] YugiMoto
+
+用 file 去看 `main.gb`，發現是 Game Boy ROM image。
+
+在 windows 上找了 BGB 這個 emulator，跑起來發現要輸入一串字，錯誤的話會跳到 no no no的畫面。
+
+BGB 有 debug mode 可以用，其中可以看到目前的 map 在記憶體中的位址
+
+![map](static/map.png)
+
+在按下確認之後讓 debugger 停住，可以找到檢查輸入的 function 應該是在 0xe61
+
+在 0xe61 最後可以看到這樣的 code
+```asm
+ld   hl, 0xC798
+ld   a, (hl)
+cp   a, 0x14      ; while i < 0x14 (0~19: 20 個 byte)
+jp   nc, 0x0FAE   ; {
+ld   c, (hl)
+ld   hl, sp+00
+ld   e, (hl)
+inc  hl
+ld   d, (hl)
+ld   l, c 
+ld   h, 0x00
+add  hl, de
+ld   e, l
+ld   d, h
+ld   a, (de)
+ld   c, a         ;   c 0xDFD8[i]
+ld   hl, 0xC798
+ld   b, (hl)
+ld   a, 0x9A
+add  b
+ld   e, a
+ld   a, 0xC7
+adc  a, 0x00
+ld   d, a
+ld   a, (de)      ;   a = 0xC79A[i]
+cp   c            ;   compare c with a
+jr   nz, 0x0FA2
+jp   0x0FA7
+ld   e, 0x00
+jp   0x0FB0
+ld   hl, 0xC798
+inc  (hl)         ;   i += 1
+jp   0x0F77       ; }
+ld   e, 01
+add  sp, 16
+pop  bc
+ret
+```
+
+主要是在比較 0xDFD8 和 0xC79A 的值有沒有一樣，而 0xe61 前面的 code 就是在設定 0xDFD8(在 stack 上) 的值。
+
+看前面的 code 可以知道他的值不會被 input 影響，可以得到如下的陣列：
+
+```
+[0x10, 0x09, 0x0e, 0x1a, 0x08, 0x10, 0x05, 0x1a, 0x20, 0x16, 0x02, 0x13, 0x06, 0x08, 0x02, 0x0e, 0x23, 0x03, 0x20, 0x1a]
+```
+
+利用 BGB 的 vram viewer 對應到每個 tile 的 tile number。如下圖，Y 對應到 0x1A
+
+![vram](static/vram_viewer.png)
+
+轉換之後就可以得到 `OHMYGODY0UAREGAM3B0Y`，也就是 FLAG
+
+輸入之後會出現 yeah 的畫面
+
+![yeah](static/yeah.png)
+
+## [reverse] VwVwVw (Unsolved)
+
+一開始會拿到一個 binary，執行之後會看到他的使用方式是 `./verify flag`，把 flag 放在第一個參數。
+
+如果 flag 長度不對，會輸出 `wrong`，而看 disassembly，正確的長度是 24。
+
+同樣是看 assembly，可以看到輸入正確的 flag 會印出 `You got it FLAG{%s}!`
+
+接著就是看 assembly 的部份
+
+```
+s = argv[1]
+
+for(i = 0; i < strlen(s); ++i) {
+  s[i] ^= argv[0][i % strlen(argv[0])];
+}
+
+s1 = (char*)malloc(0x20);
+
+xmm0 <- argv[1] 之後 16 個 char
+xmm0 <- argv[1]+0xc 之後 16 個 char
+
+cs = {0xa, 0xb, 9, 0xa, 7, 8, 6, 7, 4, 5, 3, 4, 1, 2, 0, 1, 0xa, 0xb, 9, 0xa, 7, 8, 6, 7, 4, 5, 3, 4, 1, 2, 0, 1}
+
+// 一堆 vector instruction
+
+for(i = 0; i < strlen(s1); ++i) {
+  s1[i] ^= argv[0][i % strlen(argv[0])];
+}
+
+memcmp(s1, 0x402458, 0x20);
+
+for(i = 0; i < strlen(s); ++i) {
+  s[i] ^= argv[0][i % strlen(argv[0])];
+}
+print("You got it FLAG{%s}\n", s);
+```
+
+可以看到大概是先把輸入做 xor argv[0]，在做一些 transform，最後再 xor 回來，然後檢查和 0x402458 是不是一樣。
+
+不過因為我不太熟 avx，所以中間 vector instruction 看很久，在比賽結束之前來不及看完。
+
+### [web] how2meow (Unsolved)
+
+這題大致上看起來跟 how2xss 有點像，都是要想辦法用 xss 拿到 cookie，再傳網址過去。
+
+不過有給上傳檔案的功能，能夠上傳的是 zip 檔，副檔名要是 .meow。裡面要有一個 meow 檔，內容是 edu-ctf 開頭。
+
+直接在 meow.php 打 html 可以直接注入。但是因為有設 content security policy，所以寫在 handler 或是 script tag 裡面的東西不會被執行。
+
+因為 content-security-policy 是 `default-src ‘self’ ‘unsafe-eval’; img-src *;`，所以我嘗試用 script tag 引入上傳的 zip，在 zip 最後加 js code，不過還是會因為 syntax error 提前中止。
+
+同樣的，用 img 和 svg 也會發生一樣的問題。
+
+接著因為沒有方向就沒有繼續下去。
